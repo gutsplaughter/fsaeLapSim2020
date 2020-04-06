@@ -1,0 +1,26 @@
+mass 145.18 kg
+latFriction 1.7
+longFriction 1.4
+power 40 hp
+brakingTorque 15 lb*in
+cD 0.55
+cL 0
+frontalArea 1 m^2
+primaryRatio 2.81 
+finalDrive 2.5
+1stGear 2.5
+2ndGear 2
+3rdGear 1.632
+4thGear 1.333
+5thGear 1.095
+shiftTime 0.1 s
+tireRadius 0.66666 ft
+wheelbase 1 m
+trackFront 1.1 m
+trackRear 1.061 m
+CGheight 0.3 m
+CGfront 0.45 (none)idk its a ratio bro, 45% front
+rearRollStiffness 10273 N*m/rad
+frontRollStiffness 732282 N*m/rad
+rearRollCenterHeight 0.02373884 m
+frontRollCenterHeight 0.0110998 m
