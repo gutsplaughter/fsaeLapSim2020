@@ -10,8 +10,14 @@ public class Powertrain{
     //5 gears as an array
     private double[] gear = new double[5]; //none
     private double tireRadius;           //ft
+    private double shift12;
+    private double shift23;
+    private double shift34;
+    private double shift45;
+    private double revLimit;
+    private double clutchEngagementRPM = 5700;
 
-    public Powertrain(String engineCSV, int rpmColumn, int powerColumn, double primaryRatio, double finalDrive, double gear1, double gear2, double gear3, double gear4, double gear5, double tireRadius) throws IOException{
+    public Powertrain(String engineCSV, int rpmColumn, int powerColumn, int torqueColumn, double primaryRatio, double finalDrive, double gear1, double gear2, double gear3, double gear4, double gear5, double tireRadius) throws IOException{
         //assign in all the gear ratios
         this.primaryRatio = primaryRatio;
         this.finalDrive = primaryRatio;
@@ -37,7 +43,7 @@ public class Powertrain{
         }
         System.out.println("Found CSV file with " + len + " rows...");
         //alot the size to the power now that we know the length
-        powerMap = new double[len][2];
+        powerMap = new double[len][3];
 
         //Restart the buffered reader back in the start of file
         fr = new FileReader(engineCSV);
@@ -51,15 +57,33 @@ public class Powertrain{
             powerMap[i][0] = rpm;
             double power = Double.valueOf(lineSplitted[powerColumn]);
             powerMap[i][1] = power;
+            double torque = Double.valueOf(lineSplitted[torqueColumn]);
+            powerMap[i][2] = torque;
             i++;
         }
-
         buf.close();
-
         System.out.println("Done reading engine power curve file...");
+
+
+
+        //Determine optimal shift points
+        System.out.println("Determining optimal shift points...");
+        //Find rev limit
+        revLimit = -1;
+        for(i = 0; i < powerMap.length; i++) {
+            if (powerMap[i][0] > revLimit){
+                revLimit = powerMap[i][0];
+            }
+        }
+        System.out.println("For this power curve, the max rpm is at " + revLimit);
+        
+        shift12 = (revLimit/(this.primaryRatio*this.gear[0]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of first
+        shift23 = (revLimit/(this.primaryRatio*this.gear[1]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of second
+        shift34 = (revLimit/(this.primaryRatio*this.gear[2]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of third
+        shift45 = (revLimit/(this.primaryRatio*this.gear[3]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of fourth
     }
 
-    //Determines the current maximum power and then scales all values up to create a power curve more like the desired power
+    //Determines the current maximum power and torque and then scales all values up to create a power torque curve more like the desired power torque curve
     public void scalePower(double powerGoal){
         double maxPower = -1;
         for (double[] power : powerMap) {
@@ -70,32 +94,52 @@ public class Powertrain{
         System.out.println("peak power in the provided input is " + maxPower + ", scaling to " + powerGoal + ".");
         //Calculate the scaling factor
         double scalingFactor = powerGoal/maxPower;
+        //Actually scale the power and torque
         for (double[] power : powerMap) {
-            power[1] = power[1]*scalingFactor;
+            power[1] = power[1]*scalingFactor; //Scale power
+            power[2] = power[2]*scalingFactor; //Scale torque
         }
     }
 
+    //finds the optimum gear to be in at this vehicle speed
+    public int getOptimumGear(double vehicleSpeed){
+        if (vehicleSpeed <= shift12){
+            return 1;
+        }
+        if (vehicleSpeed >= shift12 && vehicleSpeed < shift23){
+            return 2;
+        }
+        if (vehicleSpeed >= shift23 && vehicleSpeed < shift34){
+            return 3;
+        }
+        if (vehicleSpeed >= shift34 && vehicleSpeed < shift45){
+            return 4;
+        }
+        if (vehicleSpeed >= shift45){
+            return 5;
+        }
+
+        //Return -1 and hopefully someone realizes something went wrong
+        return -1;
+    }
+
     //Finds the power output at a given RPM
-    public double getPowerAtRPM(double speed){
+    public double getPowerAtRPM(double rpm){
         double closestRPM = -1;
-        double revLimit = -1;
         int index = -1;
         int i;
         for(i = 0; i < powerMap.length; i++) {
-            if (Math.abs(powerMap[i][0]-speed)<Math.abs(closestRPM-speed)){
+            if (Math.abs(powerMap[i][0]-rpm)<Math.abs(closestRPM-rpm)){
                 closestRPM = powerMap[i][0];
                 index = i;
-            }
-            if (powerMap[i][0] > revLimit){
-                revLimit = powerMap[i][0];
             }
         }
         //If the RPM is less than clutch engaged just assume the clutch is now engaged and we are at that RPM
         //The engine would spool up to this speed almost instantly <100ms
-        if (closestRPM < 4000){
+        if (closestRPM < clutchEngagementRPM){
             //Find the nearest data point to 4500 and then return the power here
             for(i = 0; i < powerMap.length; i++) {
-                if (Math.abs(powerMap[i][0]-4500)<Math.abs(closestRPM-4500)){
+                if (Math.abs(powerMap[i][0]-clutchEngagementRPM)<Math.abs(closestRPM-clutchEngagementRPM)){
                     closestRPM = powerMap[i][0];
                     index = i;
                 }
@@ -103,7 +147,38 @@ public class Powertrain{
             return powerMap[index][1];
         }       
         //If we are past the rev limitter we will get 0 power;
-        if (speed > revLimit){
+        if (rpm > revLimit){
+            return 0;
+        }
+        
+        return powerMap[index][1];
+    }
+
+    //Finds the power output at a given RPM
+    public double getTorqueAtRPM(double rpm){
+        double closestRPM = -1;
+        int index = -1;
+        int i;
+        for(i = 0; i < powerMap.length; i++) {
+            if (Math.abs(powerMap[i][0]-rpm)<Math.abs(closestRPM-rpm)){
+                closestRPM = powerMap[i][0];
+                index = i;
+            }
+        }
+        //If the RPM is less than clutch engaged just assume the clutch is now engaged and we are at that RPM
+        //The engine would spool up to this speed almost instantly <100ms
+        if (closestRPM < clutchEngagementRPM){
+            //Find the nearest data point to 4500 and then return the power here
+            for(i = 0; i < powerMap.length; i++) {
+                if (Math.abs(powerMap[i][0]-clutchEngagementRPM)<Math.abs(closestRPM-clutchEngagementRPM)){
+                    closestRPM = powerMap[i][0];
+                    index = i;
+                }
+            }
+            return powerMap[index][2];
+        }       
+        //If we are past the rev limitter we will get 0 power;
+        if (rpm > revLimit){
             return 0;
         }
         
@@ -128,23 +203,37 @@ public class Powertrain{
         return highestPower;
     }
 
-    //finds the optimum gear to be in at this vehicle speed
-    public int getOptimumGear(double vehicleSpeed){
-        //Find the respective rpm in all of the gears
-        double[] rpmInDifferentGears = new double[5];
-        for(int i = 0; i < rpmInDifferentGears.length; i++) {
-            rpmInDifferentGears[i] = (double)((this.primaryRatio*this.gear[i]*this.finalDrive*vehicleSpeed)/(60*2*3.14159*this.tireRadius)*5280);
+    //Finds the most power the engine can be making (HP) at this vehicle speed (MPH)
+    public double getOptimumTorque(double vehicleSpeed){
+        //Find the gear we are in
+        int currentGear = this.getOptimumGear(vehicleSpeed);
+        //Find which of the RPM at that gear
+        double rpmInGear = (double)((primaryRatio*gear[currentGear-1]*finalDrive*vehicleSpeed)/(60*2*3.14159*tireRadius)*5280);
+        double torque = getTorqueAtRPM(rpmInGear);
+        double torqueAtWheel = torque*primaryRatio*gear[currentGear-1]*finalDrive;
+        return torqueAtWheel;
+    }
+
+    //Finds the most power the engine can be making (HP) at this vehicle speed (MPH)
+    public double getOptimumTorque(double vehicleSpeed, int forcedGear){
+        //Find the gear we are in
+        int currentGear = forcedGear;
+        //Find which of the RPM at that gear
+        double rpmInGear = (double)((primaryRatio*gear[currentGear-1]*finalDrive*vehicleSpeed)/(60*2*3.14159*tireRadius)*5280);
+        double torque = getTorqueAtRPM(rpmInGear);
+        double torqueAtWheel = torque*primaryRatio*gear[currentGear-1]*finalDrive;
+        return torqueAtWheel;
+    }
+
+    //Return the RPM of the engine at this wheel speed (MPH)
+    public double getRPM(double vehicleSpeed){
+        //Find the gear we are in
+        int currentGear = this.getOptimumGear(vehicleSpeed);
+        //Find which of the RPM at that gear
+        double rpmInGear = (double)((primaryRatio*gear[currentGear-1]*finalDrive*vehicleSpeed)/(60*2*3.14159*tireRadius)*5280);
+        if (rpmInGear < clutchEngagementRPM){
+            return clutchEngagementRPM;
         }
-        //Find which of these RPMS would have the highest power
-        int gear = 0;
-        double highestPower = -1;
-        int i;
-        for(i = 0; i < rpmInDifferentGears.length; i++) {
-            if (this.getPowerAtRPM(rpmInDifferentGears[i]) > highestPower){
-                gear = i+1;
-                highestPower = this.getPowerAtRPM(rpmInDifferentGears[i]);
-            }
-        }
-        return gear;
+        return rpmInGear;
     }
 }

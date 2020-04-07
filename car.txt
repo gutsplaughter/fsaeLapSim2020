@@ -2,7 +2,8 @@ mass 145.18 kg
 latFriction 1.7
 longFriction 1.4
 power 40 hp
-brakingTorque 15 lb*in
+brakingTorqueFront 551 N*m
+brakingTorqueRear 310 N*m
 cD 0.55
 cL 0
 frontalArea 1 m^2

@@ -23,7 +23,8 @@ public class Car {
     private double wheelbase;            //m
     private double trackFront;           //m
     private double trackRear;            //m
-    private double brakingTorque;        //in-lb
+    private double brakingTorqueFront;        //in-lb
+    private double brakingTorqueRear;        //in-lb
     private double CGheight;             //m
     private double CGfront;              //m
     private double rearRollStiffness;    //N*m/rad
@@ -110,8 +111,11 @@ public class Car {
                 case "trackRear" :
                     trackRear = myScanner.nextDouble();
                     break;
-                case "brakingTorque" :
-                    brakingTorque = myScanner.nextDouble();   
+                case "brakingTorqueFront" :
+                    brakingTorqueFront = myScanner.nextDouble();   
+                    break;
+                case "brakingTorqueRear" :
+                    brakingTorqueRear = myScanner.nextDouble();   
                     break;
                 case "CGheight" :
                     CGheight = myScanner.nextDouble();   
@@ -166,6 +170,8 @@ public class Car {
         int rpmColumn = myScanner.nextInt();
         System.out.print("Enter the column for power data (0 is the first column): ");
         int powerColumn = myScanner.nextInt();
+        System.out.print("Enter the column for torque data (0 is the first column): ");
+        int torqueColumn = myScanner.nextInt();
 
         //Close scanner
         myScanner.close();
@@ -173,7 +179,7 @@ public class Car {
         System.out.println("\nImporting engine power curve data...");
 
         try{
-            this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
+            this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, torqueColumn, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
         }
         catch(Exception e){
             System.out.println("ERROR: Invalid engine power curve file name.");
@@ -196,10 +202,20 @@ public class Car {
         return longfriction;
     }
     public double getPower(double v){
-        return  this.powertrain.getOptimumPower(v);
+        return  this.powertrain.getOptimumPower(v*2.23694);  //Gotta go from metric to MPH
     }
+    public double getTorque(double v){
+        return  this.powertrain.getOptimumTorque(v*2.23694);  //Gotta go from metric to MPH
+    }
+    public double getTorque(double v, int forcedGear){
+        return  this.powertrain.getOptimumTorque(v*2.23694, forcedGear);  //Gotta go from metric to MPH
+    }
+    
     public int getGear(double v){
-        return  this.powertrain.getOptimumGear(v);
+        return  this.powertrain.getOptimumGear(v*2.23694); //Gotta go from metric to MPH
+    }
+    public double getRPM(double v){
+        return  this.powertrain.getRPM(v*2.23694); //Gotta go from metric to MPH
     }
     public double getFrontalArea(){
         return frontalArea;
@@ -228,8 +244,11 @@ public class Car {
     public double getTrackRear(){
         return trackRear;
     }
-    public double getBrakingTorque(){
-        return brakingTorque;
+    public double getBrakingTorqueFront(){
+        return brakingTorqueFront;
+    }
+    public double getBrakingTorqueRear(){
+        return brakingTorqueRear;
     }
     //This one is odd, check page 681 of Milliken. Its the value "H"
     public double getH(){

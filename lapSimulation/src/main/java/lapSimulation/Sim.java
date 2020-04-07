@@ -39,7 +39,7 @@ public final class Sim {
         System.out.print("Enter car configuration file name or press enter for \"car.txt\": " );
         String input2 = new String(buf2.readLine());
         Car inputCar = null;
-        if (input.isEmpty()){
+        if (input2.isEmpty()){
             fname2 = "car.txt";
         }
         else{
