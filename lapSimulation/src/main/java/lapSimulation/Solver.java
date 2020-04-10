@@ -15,7 +15,7 @@ public class Solver {
     public Solver(Track inputTrack, Car inputCar){
         this.inputTrack = inputTrack;
         this.inputCar = inputCar;
-        try{this.logger = new BufferedWriter(new FileWriter(System.currentTimeMillis() + "-solverLog.csv"));} catch(Exception e){System.out.println("ERROR: Solver could not generate an output log.");}
+        try{this.logger = new BufferedWriter(new FileWriter("output logs\\" + System.currentTimeMillis() + "-solverLog.csv"));} catch(Exception e){System.out.println("ERROR: Solver could not generate an output log.");}
         this.write("time, distance, velocity, gear, torque");
 
         //Set up our basic variables for kinetic enery and velocity
@@ -93,7 +93,6 @@ public class Solver {
             double dx = v*td;
             //Check if there was a shift once we got to new speed
             if (inputCar.getGear(v) > gear){
-                System.out.println("Shift detected!");
                 //If we found a shift then coast down for the shift time
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
@@ -107,7 +106,6 @@ public class Solver {
             //Log some metrics
             write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             //TODO remember here that the get power function may not yet be perfect here. It might need to be adjusted for idle RPM and the clutch engagement RPM
-            System.out.println("Gear: " + gear);
             ke += (inputCar.getTorque(v, gear)*1.356)/(inputCar.getTireRadius()*0.3048)*(dx)-inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
             x += v*td;
             totalLapTime += td;
@@ -119,7 +117,7 @@ public class Solver {
         double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
         while (x < getBrakingDistance(peakStraightSpeed, exitSpeed)){
             double dx = v*td;
-            ke = ke - (frontBrakingForce+rearBrakingForce)*dx-inputCar.getDragForce(v)*dx;  //Subtract the energy we lost to braking and drag
+            ke = ke - inputCar.getLongMaxTractiveForce(v, frontBrakingForce+rearBrakingForce)*dx-inputCar.getDragForce(v)*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             v = Math.sqrt((2*ke/inputCar.getMass()));
             write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             x += dx;
@@ -139,7 +137,6 @@ public class Solver {
             //Check if there was a shift once we got to new speed
             int checkingGear = inputCar.getGear(v);
             if (checkingGear > gear){
-                System.out.println("Shift detected!");
                 //If we found a shift then coast down for the shift time
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
@@ -152,7 +149,6 @@ public class Solver {
             }
             //Log some metrics
             write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + gear + ", " + inputCar.getTorque(v) + ", " + inputCar.getRPM(v));
-            System.out.println("Gear: " + gear);
             //TODO remember here that the get power function may not yet be perfect here. It might need to be adjusted for idle RPM and the clutch engagement RPM
             ke += (inputCar.getTorque(v, gear)*1.356)/(inputCar.getTireRadius()*0.3048)*(dx)-inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
             x += dx;
@@ -179,15 +175,19 @@ public class Solver {
     }
 
     //Returns the distance it takes to go from velIn(m/s) to velOut(m/s)
+    //TODO this can be made WAY faster with calculus but its still fast
     public double getBrakingDistance(double velIn, double velOut){
-        double dist = 0;
-        double changeInKE = 0.5*inputCar.getMass()*(Math.pow(velIn,2) - Math.pow(velOut,2)); //The energy we need to shed in the brakes is the KE diff between the start velocity and the end velocity
         double frontBrakingForce = inputCar.getBrakingTorqueFront()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
         double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
-        double changeInDragForce = inputCar.getDragForce(velIn)-inputCar.getDragForce(velOut); 
-        dist = changeInKE/(frontBrakingForce+rearBrakingForce+changeInDragForce);
+        double internalV = velIn;
+        double dist = 0;
+        double internalKE = 0.5*inputCar.getMass()*Math.pow(velIn,2);
+        while (internalV > velOut){
+            double internalDx = internalV*td;
+            internalKE = internalKE - inputCar.getLongMaxTractiveForce(internalV, frontBrakingForce+rearBrakingForce)*internalDx-inputCar.getDragForce(internalV)*internalDx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
+            internalV = Math.sqrt((2*internalKE/inputCar.getMass()));
+            dist += internalDx;
+        }
         return dist;
     }
-
-
 }

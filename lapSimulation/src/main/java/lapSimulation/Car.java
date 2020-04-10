@@ -32,6 +32,7 @@ public class Car {
     private double rearRollCenterHeight;    //m
     private double frontRollCenterHeight;   //m
     private Powertrain powertrain;
+    private Tire tire;
 
     //Constructor to read in the track attributes
     public Car(String fname) throws IOException {
@@ -188,18 +189,20 @@ public class Car {
         //Scale the peak power of the curve to the user input peak power
         this.powertrain.scalePower(this.power);
 
-        System.out.println("H is found to be " + this.getH());
+        ///////////////////
+        //  TIRE SET UP  //
+        ///////////////////
+        tire = new Tire();
+
     }
 
-
-    public double getMass(){
-        return mass;
-    }
-    public double getLatFriction(){
-        return latfriction;
-    }
-    public double getLongFriction(){
-        return longfriction;
+    ///////////////////////////////////////////////////////////////////////
+    //Functions the solver might need
+    //This one is odd, check page 681 of Milliken. Its the value "H"
+    public double getH(){
+        double distFromFront = wheelbase*CGfront;
+        double H = CGheight-(distFromFront*(rearRollCenterHeight-frontRollCenterHeight)/wheelbase+frontRollCenterHeight);
+        return H;
     }
     public double getPower(double v){
         return  this.powertrain.getOptimumPower(v*2.23694);  //Gotta go from metric to MPH
@@ -210,18 +213,43 @@ public class Car {
     public double getTorque(double v, int forcedGear){
         return  this.powertrain.getOptimumTorque(v*2.23694, forcedGear);  //Gotta go from metric to MPH
     }
-    
     public int getGear(double v){
         return  this.powertrain.getOptimumGear(v*2.23694); //Gotta go from metric to MPH
     }
     public double getRPM(double v){
         return  this.powertrain.getRPM(v*2.23694); //Gotta go from metric to MPH
     }
-    public double getFrontalArea(){
-        return frontalArea;
-    }
     public double getDragForce(double v){
         return  this.getcD()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
+    }
+    public double getDownForce(double v){
+        return  -this.getcL()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
+    }
+    public double getLongMaxTractiveForce(double v, double F){
+        double normalForce = getDownForce(v)+mass;
+        double maxTractiveForce = normalForce*longfriction;
+        if (maxTractiveForce >= F){
+            return F;
+        }
+        else{
+            return maxTractiveForce;
+        }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //Getters for basic vars
+    public double getMass(){
+        return mass;
+    }
+    public double getLatFriction(){
+        return latfriction;
+    }
+    public double getLongFriction(){
+        return longfriction;
+    }
+    public double getFrontalArea(){
+        return frontalArea;
     }
     public double getcD(){
         return cD;
@@ -250,12 +278,6 @@ public class Car {
     public double getBrakingTorqueRear(){
         return brakingTorqueRear;
     }
-    //This one is odd, check page 681 of Milliken. Its the value "H"
-    public double getH(){
-        double distFromFront = wheelbase*CGfront;
-        double H = CGheight-(distFromFront*(rearRollCenterHeight-frontRollCenterHeight)/wheelbase+frontRollCenterHeight);
-        return H;
-    }
     public double getCGheight(){
         return CGheight;
     }
@@ -274,4 +296,68 @@ public class Car {
     public double getRearRollCenterHeight(){
         return rearRollCenterHeight;
     }
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //Setters for basic vars
+    public void setMass(double mass){
+         this.mass = mass;
+    }
+    public void setLatFriction(double latfriction){
+         this.latfriction = latfriction;
+    }
+    public void setLongFriction(double longfriction){
+         this.longfriction = longfriction;
+    }
+    public void setFrontalArea(double frontalArea){
+         this.frontalArea = frontalArea;
+    }
+    public void setcD(double cD){
+         this.cD = cD;
+    }
+    public void setcL(double cL){
+         this.cL = cL;
+    }
+    public void setTireRadius(double tireRadius){
+         this.tireRadius = tireRadius;
+    }
+    public void setShiftTime(double shiftTime){
+         this.shiftTime = shiftTime;
+    }
+    public void setWheelbase(double wheelbase){
+         this.wheelbase = wheelbase;
+    }
+    public void setTrackFront(double trackFront){
+         this.trackFront = trackFront;
+    }
+    public void setTrackRear(double trackRear){
+         this.trackRear = trackRear;
+    }
+    public void setBrakingTorqueFront(double brakingTorqueFront){
+         this.brakingTorqueFront = brakingTorqueFront;
+    }
+    public void setBrakingTorqueRear(double brakingTorqueRear){
+         this.brakingTorqueRear = brakingTorqueRear;
+    }
+    public void setCGheight(double CGheight){
+         this.CGheight = CGheight;
+    }
+    public void setCGfront(double CGfront){
+         this.CGfront = CGfront;
+    }
+    public void setRearRollStiffness(double rearRollStiffness){
+         this.rearRollStiffness = rearRollStiffness;
+    }
+    public void setFrontRollStiffness(double frontRollStiffness){
+         this.frontRollStiffness = frontRollStiffness;
+    }
+    public void setFrontRollCenterHeight(double frontRollCenterHeight){
+         this.frontRollCenterHeight = frontRollCenterHeight;
+    }
+    public void setRearRollCenterHeight(double rearRollCenterHeight){
+         this.rearRollCenterHeight = rearRollCenterHeight;
+    }
+
+
+
 }
