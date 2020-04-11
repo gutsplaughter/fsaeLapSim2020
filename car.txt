@@ -1,4 +1,5 @@
 mass 145.18 kg
+driverMass 80 kg
 latFriction 1.7
 longFriction 1.4
 power 40 hp
@@ -16,7 +17,7 @@ finalDrive 2.5
 5thGear 1.095
 shiftTime 0.1 s
 tireRadius 0.66666 ft
-wheelbase 1 m
+wheelbase 1.549 m
 trackFront 1.1 m
 trackRear 1.061 m
 CGheight 0.3 m

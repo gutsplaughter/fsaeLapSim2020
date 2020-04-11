@@ -1,12 +1,9 @@
 package lapSimulation;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-
 public class Solver {
     private Track inputTrack;
     private Car inputCar;
-    private BufferedWriter logger;
+    private Logger logger;
     private double v;                   //velocity (m/s)
     private double ke;                  //kinetic energy (J)
     private double td;                  //step time increment (s)
@@ -15,8 +12,10 @@ public class Solver {
     public Solver(Track inputTrack, Car inputCar){
         this.inputTrack = inputTrack;
         this.inputCar = inputCar;
-        try{this.logger = new BufferedWriter(new FileWriter("output logs\\" + System.currentTimeMillis() + "-solverLog.csv"));} catch(Exception e){System.out.println("ERROR: Solver could not generate an output log.");}
-        this.write("time, distance, velocity, gear, torque");
+        
+
+        logger = new Logger("solverLog");
+        logger.write("time, distance, velocity, gear, torque");
 
         //Set up our basic variables for kinetic enery and velocity
         v = 0; //velocity cant start at zero or things cancel out
@@ -28,11 +27,6 @@ public class Solver {
         
     }
 
-    public void write(String line){
-        try{logger.write(line + "\n"); logger.flush();} catch(Exception e){System.out.println("ERROR: Solver could not write to output log");}
-        try{logger.flush();}catch(Exception e){}
-    }
-    
     public double solveLapTime(){
         ////////////////////////////////////////////
         //  SCROLL THROUGH ALL ELEMENTS OF TRACK  //
@@ -43,8 +37,6 @@ public class Solver {
         Track trackQueue = inputTrack;
         Manuever currentManuever = trackQueue.getNext();
         Manuever nextManuever = trackQueue.getNext();
-
-        //TODO DELETE getBrakingDistance(15, 0);
         
         //Check to see if the track is only a single straight
         if (nextManuever.getEndOfTrack() && currentManuever.isStraight()){
@@ -88,6 +80,10 @@ public class Solver {
         ke = 0.5*inputCar.getMass()*Math.pow(v, 2);
         int gear = inputCar.getGear(entrySpeed);
         //Accelerate until we need to brake (like when our dist travelled + braking distance = length)
+        if (length < getBrakingDistance(v, exitSpeed)){
+            System.out.println("ERROR: " + length + " straight too short, the vehicle is braking immediately out of corner");
+            System.out.println("Braking distance minimum is " + getBrakingDistance(v, exitSpeed));
+        }
         while (x < (length-getBrakingDistance(v, exitSpeed))){
             v = Math.sqrt((2*ke/inputCar.getMass()));
             double dx = v*td;
@@ -96,7 +92,7 @@ public class Solver {
                 //If we found a shift then coast down for the shift time
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
-                    write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v));
+                    logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v) + ", " + getBrakingDistance(v, exitSpeed));
                     ke = ke - inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
                     x += dx;
                     totalLapTime += td;
@@ -104,22 +100,24 @@ public class Solver {
                 gear++;
             }
             //Log some metrics
-            write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             //TODO remember here that the get power function may not yet be perfect here. It might need to be adjusted for idle RPM and the clutch engagement RPM
             ke += (inputCar.getTorque(v, gear)*1.356)/(inputCar.getTireRadius()*0.3048)*(dx)-inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
             x += v*td;
             totalLapTime += td;
         }
         double peakStraightSpeed = v;
+        System.out.println("Peak speed = " + peakStraightSpeed);
         //Now perform the braking
         x = 0;
         double frontBrakingForce = inputCar.getBrakingTorqueFront()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
-        double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
+        double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m)
         while (x < getBrakingDistance(peakStraightSpeed, exitSpeed)){
             double dx = v*td;
-            ke = ke - inputCar.getLongMaxTractiveForce(v, frontBrakingForce+rearBrakingForce)*dx-inputCar.getDragForce(v)*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
+            //TODO Check the braking force * distance here!!
+            ke = ke - inputCar.getLongMaxBrakingForce(v, frontBrakingForce+rearBrakingForce)*dx-inputCar.getDragForce(v)*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             v = Math.sqrt((2*ke/inputCar.getMass()));
-            write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             x += dx;
             totalLapTime += td;
         }
@@ -140,7 +138,7 @@ public class Solver {
                 //If we found a shift then coast down for the shift time
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
-                    write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v));
+                    logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v));
                     ke = ke - inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
                     x += dx;
                     totalLapTime += td;
@@ -148,7 +146,7 @@ public class Solver {
                 gear++;
             }
             //Log some metrics
-            write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + gear + ", " + inputCar.getTorque(v) + ", " + inputCar.getRPM(v));
+            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + gear + ", " + inputCar.getTorque(v) + ", " + inputCar.getRPM(v));
             //TODO remember here that the get power function may not yet be perfect here. It might need to be adjusted for idle RPM and the clutch engagement RPM
             ke += (inputCar.getTorque(v, gear)*1.356)/(inputCar.getTireRadius()*0.3048)*(dx)-inputCar.getDragForce(v)*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
             x += dx;
@@ -169,7 +167,7 @@ public class Solver {
         double x = 0;
         while (x < curve.getDistance()){
             x += v*td;
-            write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             totalLapTime += td;
         }
     }
@@ -184,10 +182,11 @@ public class Solver {
         double internalKE = 0.5*inputCar.getMass()*Math.pow(velIn,2);
         while (internalV > velOut){
             double internalDx = internalV*td;
-            internalKE = internalKE - inputCar.getLongMaxTractiveForce(internalV, frontBrakingForce+rearBrakingForce)*internalDx-inputCar.getDragForce(internalV)*internalDx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
+            internalKE = internalKE - inputCar.getLongMaxBrakingForce(internalV, frontBrakingForce+rearBrakingForce)*internalDx-inputCar.getDragForce(internalV)*internalDx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             internalV = Math.sqrt((2*internalKE/inputCar.getMass()));
             dist += internalDx;
         }
+
         return dist;
     }
 }

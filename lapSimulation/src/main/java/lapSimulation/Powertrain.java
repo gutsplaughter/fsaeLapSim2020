@@ -28,6 +28,7 @@ public class Powertrain{
         this.gear[4] = gear5;
         this.tireRadius = tireRadius;
 
+
         FileReader fr=new FileReader(engineCSV);   
         BufferedReader buf = new BufferedReader (fr);
 
@@ -62,12 +63,12 @@ public class Powertrain{
             i++;
         }
         buf.close();
-        System.out.println("Done reading engine power curve file...");
+        System.out.println("Done");
 
 
 
         //Determine optimal shift points
-        System.out.println("Determining optimal shift points...");
+        System.out.print("Determining optimal shift points...");
         //Find rev limit
         revLimit = -1;
         for(i = 0; i < powerMap.length; i++) {
@@ -75,12 +76,13 @@ public class Powertrain{
                 revLimit = powerMap[i][0];
             }
         }
-        System.out.println("For this power curve, the max rpm is at " + revLimit);
-        
+        //Find the shift points (assume redline shift, this is a pretty good assumption)
         shift12 = (revLimit/(this.primaryRatio*this.gear[0]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of first
         shift23 = (revLimit/(this.primaryRatio*this.gear[1]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of second
         shift34 = (revLimit/(this.primaryRatio*this.gear[2]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of third
         shift45 = (revLimit/(this.primaryRatio*this.gear[3]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of fourth
+        
+        System.out.println("Done");
     }
 
     //Determines the current maximum power and torque and then scales all values up to create a power torque curve more like the desired power torque curve
@@ -91,7 +93,7 @@ public class Powertrain{
                 maxPower = power[1];
             }
         }
-        System.out.println("peak power in the provided input is " + maxPower + ", scaling to " + powerGoal + ".");
+        System.out.println("Peak power in the provided input is " + maxPower + ", scaling to " + powerGoal + ".");
         //Calculate the scaling factor
         double scalingFactor = powerGoal/maxPower;
         //Actually scale the power and torque
@@ -235,5 +237,28 @@ public class Powertrain{
             return clutchEngagementRPM;
         }
         return rpmInGear;
+    }
+
+    //Setters
+    public void setPrimaryRatio(double primaryRatio){
+        this.primaryRatio = primaryRatio;
+    }
+    public void setGear1(double gear1){
+        this.gear[0] = gear1;
+    }
+    public void setGear2(double gear2){
+        this.gear[1] = gear2;
+    }
+    public void setGear3(double gear3){
+        this.gear[2] = gear3;
+    }
+    public void setGear4(double gear4){
+        this.gear[3] = gear4;
+    }
+    public void setGear5(double gear5){
+        this.gear[4] = gear5;
+    }
+    public void setFinalDrive(double finalDrive){
+        this.finalDrive = finalDrive;
     }
 }

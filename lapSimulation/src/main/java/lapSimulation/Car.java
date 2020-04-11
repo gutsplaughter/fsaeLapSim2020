@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 public class Car {
     private double mass;                 //mass of the car in kg, the mass of a 180lb driver will be added
+    private double driverMass;                 //mass of the car in kg, the mass of a 180lb driver will be added
     private double latfriction;          //lateral friction coeff for tire
     private double longfriction;         //long friction coeff for tire
     private double power;                //hp to the wheels, the power curve will get scaled to this
@@ -55,8 +56,10 @@ public class Car {
             }
             switch(varType){
                 case "mass" :
-                    mass = myScanner.nextDouble()+(double)81.8181;
-                    System.out.println("Added mass of driver to get total mass of " + this.mass);
+                    mass = myScanner.nextDouble();
+                    break;
+                case "driverMass" :
+                    driverMass = myScanner.nextDouble();
                     break;
                 case "latFriction" :
                     latfriction = myScanner.nextDouble();   
@@ -145,7 +148,7 @@ public class Car {
         
         System.out.println("Done\n");
         
-        //TODO Beging checking that all needed variables are present, alert user if one is missing
+        //TODO Begin checking that all needed variables are present, alert user if one is missing
         //System.out.println("Verifying car inputs (MAYBE)...");
 
         //Close out that file reader and scanner BOI
@@ -157,34 +160,40 @@ public class Car {
         //  ENGINE/DRIVETRAIN SETUP //
         //////////////////////////////
         String engineCSV = new String("engineData.csv");
-        System.out.print("\nEnter engine data file name or press enter for \"engineData.csv\" (First row will be ignored): ");
-        //Read user input and overwrite if not empty
-        Scanner myScanner = new Scanner(System.in);
-        String input = myScanner.nextLine();
-        if (!input.isEmpty()){
-            engineCSV = input;
+        if (Sim.inputMode.equals("default")){
+            this.powertrain = new Powertrain(engineCSV, 2, 4, 3, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
         }
-        System.out.println("Engine data file entered as " + engineCSV);
-
-        //Get the column data for power and rpm
-        System.out.print("Enter the column for rpm data (0 is the first column): ");
-        int rpmColumn = myScanner.nextInt();
-        System.out.print("Enter the column for power data (0 is the first column): ");
-        int powerColumn = myScanner.nextInt();
-        System.out.print("Enter the column for torque data (0 is the first column): ");
-        int torqueColumn = myScanner.nextInt();
-
-        //Close scanner
-        myScanner.close();
-
-        System.out.println("\nImporting engine power curve data...");
-
-        try{
-            this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, torqueColumn, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
+        else{
+            System.out.print("\nEnter engine data file name or press enter for \"engineData.csv\" (First row will be ignored): ");
+            //Read user input and overwrite if not empty
+            Scanner myScanner = new Scanner(System.in);
+            String input = myScanner.nextLine();
+            if (!input.isEmpty()){
+                engineCSV = input;
+            }
+            System.out.println("Engine data file entered as " + engineCSV);
+    
+            //Get the column data for power and rpm
+            System.out.print("Enter the column for rpm data (0 is the first column): ");
+            int rpmColumn = myScanner.nextInt();
+            System.out.print("Enter the column for power data (0 is the first column): ");
+            int powerColumn = myScanner.nextInt();
+            System.out.print("Enter the column for torque data (0 is the first column): ");
+            int torqueColumn = myScanner.nextInt();
+    
+            //Close scanner
+            myScanner.close();
+    
+            System.out.println("\nImporting engine power curve data...");
+    
+            try{
+                this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, torqueColumn, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
+            }
+            catch(Exception e){
+                System.out.println("ERROR: Invalid engine power curve file name.");
+            }
         }
-        catch(Exception e){
-            System.out.println("ERROR: Invalid engine power curve file name.");
-        }
+        
         
         //Scale the peak power of the curve to the user input peak power
         this.powertrain.scalePower(this.power);
@@ -225,7 +234,18 @@ public class Car {
     public double getDownForce(double v){
         return  -this.getcL()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
     }
+    //TODO Make one of the 4WD (braking), and another one 2WD (Accel)
     public double getLongMaxTractiveForce(double v, double F){
+        double normalForce = (getDownForce(v)+mass)/2;
+        double maxTractiveForce = normalForce*longfriction;
+        if (maxTractiveForce >= F){
+            return F;
+        }
+        else{
+            return maxTractiveForce;
+        }
+    }
+    public double getLongMaxBrakingForce(double v, double F){
         double normalForce = getDownForce(v)+mass;
         double maxTractiveForce = normalForce*longfriction;
         if (maxTractiveForce >= F){
@@ -240,7 +260,7 @@ public class Car {
     ////////////////////////////////////////////////////////////////////////
     //Getters for basic vars
     public double getMass(){
-        return mass;
+        return mass+driverMass;
     }
     public double getLatFriction(){
         return latfriction;
@@ -303,6 +323,12 @@ public class Car {
     public void setMass(double mass){
          this.mass = mass;
     }
+    public void setPower(double power){
+        this.powertrain.scalePower(power);
+    }
+    public void setDriverMass(double driverMass){
+        this.driverMass = driverMass;
+   }
     public void setLatFriction(double latfriction){
          this.latfriction = latfriction;
     }
@@ -357,7 +383,26 @@ public class Car {
     public void setRearRollCenterHeight(double rearRollCenterHeight){
          this.rearRollCenterHeight = rearRollCenterHeight;
     }
-
-
+    public void setPrimaryRatio(double primaryRatio){
+        this.powertrain.setPrimaryRatio(primaryRatio);
+    }
+    public void setFinalDrive(double finalDrive){
+        this.powertrain.setPrimaryRatio(finalDrive);
+    }
+    public void setGear1(double gear1){
+        this.powertrain.setGear1(gear1);
+    }
+    public void setGear2(double gear2){
+        this.powertrain.setGear2(gear2);
+    }
+    public void setGear3(double gear3){
+        this.powertrain.setGear3(gear3);
+    }
+    public void setGear4(double gear4){
+        this.powertrain.setGear4(gear4);
+    }
+    public void setGear5(double gear5){
+        this.powertrain.setGear5(gear5);
+    }
 
 }
