@@ -73,6 +73,12 @@ public class Solver {
         return totalLapTime;
     }
 
+    /////////////////////////////
+    //    SOLVING METHODS      //
+    /////////////////////////////
+
+
+    /////////////////////////////////////////////////////////////////
     //Method to solve a straight away with a known required exit speed
     public void solveStraight(double length, double entrySpeed, double exitSpeed){
         double x = 0;
@@ -114,7 +120,6 @@ public class Solver {
         double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m)
         while (x < getBrakingDistance(peakStraightSpeed, exitSpeed)){
             double dx = v*td;
-            //TODO Check the braking force * distance here!!
             ke = ke - inputCar.getLongMaxBrakingForce(v, frontBrakingForce+rearBrakingForce)*dx-inputCar.getDragForce(v)*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             v = Math.sqrt((2*ke/inputCar.getMass()));
             logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
@@ -123,6 +128,7 @@ public class Solver {
         }
     }
 
+    /////////////////////////////////////////////////////////////////
     //Method to solve straight with no known required exit speed
     public void solveStraight(double length, double entrySpeed){
         double x = 0;
@@ -154,6 +160,7 @@ public class Solver {
         }            
     }
 
+    /////////////////////////////////////////////////////////////////
     //Returns the steady state speed to tackle the constant radius turn
     public double solveCurveSpeed(Manuever curve){
         //TODO add weight transfer and tire model????
@@ -161,6 +168,7 @@ public class Solver {
         return curveSpeed;
     }
 
+    /////////////////////////////////////////////////////////////////
     //This actually performs the curve
     public void solveCurve(Manuever curve){
         v = solveCurveSpeed(curve);
@@ -172,6 +180,7 @@ public class Solver {
         }
     }
 
+    /////////////////////////////////////////////////////////////////
     //Returns the distance it takes to go from velIn(m/s) to velOut(m/s)
     //TODO this can be made WAY faster with calculus but its still fast
     public double getBrakingDistance(double velIn, double velOut){

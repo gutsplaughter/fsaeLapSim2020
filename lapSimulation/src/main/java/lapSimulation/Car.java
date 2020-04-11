@@ -234,10 +234,10 @@ public class Car {
     public double getDownForce(double v){
         return  -this.getcL()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
     }
-    //TODO Make one of the 4WD (braking), and another one 2WD (Accel)
+    //TODO add in the camber angle?? and also add the weight transfer!
     public double getLongMaxTractiveForce(double v, double F){
-        double normalForce = (getDownForce(v)+mass)/2;
-        double maxTractiveForce = normalForce*longfriction;
+        double normalForce = (getDownForce(v)+mass*9.81)/2;
+        double maxTractiveForce = normalForce*tire.getMuLong(0, normalForce/2);
         if (maxTractiveForce >= F){
             return F;
         }
@@ -245,9 +245,10 @@ public class Car {
             return maxTractiveForce;
         }
     }
+    //TODO add in the camber angle?? and also add the weight transfer!
     public double getLongMaxBrakingForce(double v, double F){
-        double normalForce = getDownForce(v)+mass;
-        double maxTractiveForce = normalForce*longfriction;
+        double normalForce = getDownForce(v)+mass*9.81;
+        double maxTractiveForce = normalForce*tire.getMuLong(0, normalForce/4);
         if (maxTractiveForce >= F){
             return F;
         }
@@ -404,5 +405,4 @@ public class Car {
     public void setGear5(double gear5){
         this.powertrain.setGear5(gear5);
     }
-
 }
