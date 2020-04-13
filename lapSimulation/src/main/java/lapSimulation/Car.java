@@ -6,8 +6,6 @@ import java.util.Scanner;
 public class Car {
     private double mass;                 //mass of the car in kg, the mass of a 180lb driver will be added
     private double driverMass;                 //mass of the car in kg, the mass of a 180lb driver will be added
-    private double latfriction;          //lateral friction coeff for tire
-    private double longfriction;         //long friction coeff for tire
     private double power;                //hp to the wheels, the power curve will get scaled to this
     private double cD;                   //none 
     private double cL;                   //none
@@ -60,12 +58,6 @@ public class Car {
                     break;
                 case "driverMass" :
                     driverMass = myScanner.nextDouble();
-                    break;
-                case "latFriction" :
-                    latfriction = myScanner.nextDouble();   
-                    break;
-                case "longFriction" :
-                    longfriction = myScanner.nextDouble();   
                     break;
                 case "power" :
                     power = myScanner.nextDouble();   
@@ -232,29 +224,36 @@ public class Car {
         return  this.getcD()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
     }
     public double getDownForce(double v){
-        return  -this.getcL()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
+        double downForce = -this.getcL()*this.getFrontalArea()*1.225*Math.pow(v,2)/2;
+        return  downForce;
     }
     //TODO add in the camber angle?? and also add the weight transfer!
-    public double getLongMaxTractiveForce(double v, double F){
-        double normalForce = (getDownForce(v)+mass*9.81)/2;
-        double maxTractiveForce = normalForce*tire.getMuLong(0, normalForce/2);
-        if (maxTractiveForce >= F){
-            return F;
-        }
-        else{
-            return maxTractiveForce;
-        }
+    public double getLongMaxTractiveForcePerTire(double Fz){
+        double maxTractiveForce = Fz*tire.getMuLong(0, Fz);
+        return maxTractiveForce;
     }
     //TODO add in the camber angle?? and also add the weight transfer!
-    public double getLongMaxBrakingForce(double v, double F){
-        double normalForce = getDownForce(v)+mass*9.81;
-        double maxTractiveForce = normalForce*tire.getMuLong(0, normalForce/4);
-        if (maxTractiveForce >= F){
-            return F;
-        }
-        else{
-            return maxTractiveForce;
-        }
+    public double getLongMaxForcePerTire(double Fz){
+        double maxTractiveForce = Fz*tire.getMuLong(0, Fz);
+        return maxTractiveForce;
+    }
+    //TODO add in the camber angle??
+    //This one returns the max lateral force a tire can give given the normal load on it
+    public double getLatMaxForcePerTire(double Fz){
+        double maxLatForce = Fz*tire.getMuLat(0, Fz);
+        return maxLatForce;
+    }
+    public double getFrontWeightTransfer(double g){
+        double wt = getMass()/getTrackFront()*((getH()*getFrontRollStiffness())/(getFrontRollStiffness()+getRearRollStiffness())+getCGfront()*getFrontRollCenterHeight());
+        return wt;
+    }
+    public double getRearWeightTransfer(double g){
+        double wt = getMass()/getTrackFront()*((getH()*getRearRollStiffness())/(getFrontRollStiffness()+getRearRollStiffness())+getCGfront()*getRearRollCenterHeight());
+        return wt;
+    }
+    public double getLongWeightTransfer(double g){
+        double wt = getMass()*getCGheight()*g/wheelbase;
+        return wt;
     }
 
 
@@ -263,12 +262,7 @@ public class Car {
     public double getMass(){
         return mass+driverMass;
     }
-    public double getLatFriction(){
-        return latfriction;
-    }
-    public double getLongFriction(){
-        return longfriction;
-    }
+
     public double getFrontalArea(){
         return frontalArea;
     }
@@ -330,12 +324,6 @@ public class Car {
     public void setDriverMass(double driverMass){
         this.driverMass = driverMass;
    }
-    public void setLatFriction(double latfriction){
-         this.latfriction = latfriction;
-    }
-    public void setLongFriction(double longfriction){
-         this.longfriction = longfriction;
-    }
     public void setFrontalArea(double frontalArea){
          this.frontalArea = frontalArea;
     }

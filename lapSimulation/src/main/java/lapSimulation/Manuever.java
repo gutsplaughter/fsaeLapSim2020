@@ -19,8 +19,7 @@ public class Manuever {
         else if (line.contains("c")){
             isStraight = false;
             radius = myScanner.nextDouble();
-            String temp = new String(myScanner.next());
-            temp = null;
+            myScanner.next();
             double curvature = myScanner.nextDouble();
             distance = 2*3.14159*radius*(curvature/100);
         }

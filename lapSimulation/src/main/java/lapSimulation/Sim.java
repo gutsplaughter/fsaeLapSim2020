@@ -132,26 +132,6 @@ public final class Sim {
                         logger.write(minMaxStep[0] + ", " + solver.solveLapTime());
                     }
                     break;
-                case "latFriction" :
-                    minMaxStep = getMinMaxStep("latFriction");
-                    for(minMaxStep[0] = minMaxStep[0]; minMaxStep[0] <= minMaxStep[1]; minMaxStep[0] += minMaxStep[2]){
-                        inputTrack = new Track("track.txt");
-                        System.out.println("Solving with latFriction: " + minMaxStep[0]);
-                        inputCar.setLatFriction(minMaxStep[0]);
-                        Solver solver = new Solver(inputTrack, inputCar);
-                        logger.write(minMaxStep[0] + ", " + solver.solveLapTime());
-                    }
-                    break;
-                case "longFriction" :
-                    minMaxStep = getMinMaxStep("longFriction");
-                    for(minMaxStep[0] = minMaxStep[0]; minMaxStep[0] <= minMaxStep[1]; minMaxStep[0] += minMaxStep[2]){
-                        inputTrack = new Track("track.txt");
-                        System.out.println("Solving with longFriction: " + minMaxStep[0]);
-                        inputCar.setLongFriction(minMaxStep[0]);
-                        Solver solver = new Solver(inputTrack, inputCar);
-                        logger.write(minMaxStep[0] + ", " + solver.solveLapTime());
-                    }
-                    break;
                 case "power" :
                     minMaxStep = getMinMaxStep("power");
                     for(minMaxStep[0] = minMaxStep[0]; minMaxStep[0] <= minMaxStep[1]; minMaxStep[0] += minMaxStep[2]){
