@@ -4,7 +4,7 @@ power 40 hp
 brakingTorqueFront 551 N*m
 brakingTorqueRear 310 N*m
 cD 0.55
-cL 0
+cL -3.5
 frontalArea 1 m^2
 primaryRatio 2.81 
 finalDrive 2.5

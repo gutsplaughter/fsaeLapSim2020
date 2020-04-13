@@ -4,6 +4,7 @@ public class Solver {
     private Track inputTrack;
     private Car inputCar;
     private Logger logger;
+    private Logger logger2;
     private double v;                   //velocity (m/s)
     private double ke;                  //kinetic energy (J)
     private double td;                  //step time increment (s)
@@ -15,6 +16,7 @@ public class Solver {
         
 
         logger = new Logger("solverLog");
+        logger2 = new Logger("brakingLog");
         logger.write("time, distance, velocity, gear, torque");
 
         //Set up our basic variables for kinetic enery and velocity
@@ -51,6 +53,7 @@ public class Solver {
                 System.out.println("Processing " + currentManuever + "...");
                 //if we have a straight followed by turn then we need to find the velocity of the next turn first to know our end velocity
                 double endVel = solveCurveSpeed(nextManuever);
+                logger2.write("curvespeed" + endVel);
                 //Set a variable to the total distance of this straight away
                 solveStraight(currentManuever.getDistance(), v, endVel);
             }
@@ -132,7 +135,6 @@ public class Solver {
             //If the tire force is greater than max allowed just use the max allowed force
             if (tireF >= maxTractiveForce){
                 tireF = maxTractiveForce;
-                System.out.println("At traction limit accelerating");
             }
             double externalF = inputCar.getDragForce(v);
             f = tireF-externalF;
@@ -144,7 +146,7 @@ public class Solver {
         }
         double peakStraightSpeed = v;
         System.out.println("Peak speed = " + peakStraightSpeed);
-        
+        logger2.write("Starting braking with " + (length-x) + " to go ");
         //Now perform the braking
         x = 0;
         a = 0;
@@ -165,13 +167,15 @@ public class Solver {
             }
             dx = v*td;
             double tireF = frontBrakingForce+rearBrakingForce;
-            double externalF = inputCar.getDownForce(v);
-            ke = ke - tireF*dx-externalF*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
+            double externalF = inputCar.getDragForce(v);
+            a = (tireF+externalF)/inputCar.getMass();
+            ke = ke - tireF*dx - externalF*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             v = Math.sqrt((2*ke/inputCar.getMass()));
             logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             x += dx;
             totalLapTime += td;
         }
+        logger2.write("Finished braking in distance " + x + " and speed " + v + " speed should be " + exitSpeed);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -214,7 +218,6 @@ public class Solver {
             //If the tire force is greater than max allowed just use the max allowed force
             if (tireF >= maxTractiveForce){
                 tireF = maxTractiveForce;
-                System.out.println("At traction limit accelerating");
             }
             double externalF = inputCar.getDragForce(v);
             f = tireF-externalF;
@@ -230,6 +233,7 @@ public class Solver {
     //Returns the steady state speed to tackle the constant radius turn
     //It assumes all the turns are right hand turns. This doesnt matter anyway. The car is symmetric
     public double solveCurveSpeed(Manuever curve){
+        logger2.write(curve.toString());
         //double curveSpeed = Math.sqrt(curve.getRadius()*9.81*inputCar.getLatFriction());
         //Setup Fz for each wheel
         double frNorm = 0;
@@ -246,11 +250,11 @@ public class Solver {
             double frontWeightTransfer = inputCar.getFrontWeightTransfer(g);
             double rearWeightTransfer = inputCar.getRearWeightTransfer(g);
             //Get the downforce and divide by 4, this is downforce per wheel
-            double downforce = inputCar.getDownForce(v)/4;
-            frNorm = (frontWeight/2 - frontWeightTransfer)*9.81 + downforce;
-            flNorm = (frontWeight/2 + frontWeightTransfer)*9.81 + downforce;
-            rrNorm = (rearWeight/2 - rearWeightTransfer)*9.81 + downforce;
-            rlNorm = (rearWeight/2 + rearWeightTransfer)*9.81 + downforce;
+            double downforcePerTire = inputCar.getDownForce(vel)/4;
+            frNorm = (frontWeight/2 - frontWeightTransfer)*9.81 + downforcePerTire;
+            flNorm = (frontWeight/2 + frontWeightTransfer)*9.81 + downforcePerTire;
+            rrNorm = (rearWeight/2 - rearWeightTransfer)*9.81 + downforcePerTire;
+            rlNorm = (rearWeight/2 + rearWeightTransfer)*9.81 + downforcePerTire;
             //Get the total max lateral force the car can be outputting at this lateral acceleration in the turn
             double combinedLatForce = inputCar.getLatMaxForcePerTire(frNorm) + inputCar.getLatMaxForcePerTire(flNorm) + inputCar.getLatMaxForcePerTire(rrNorm) + inputCar.getLatMaxForcePerTire(rlNorm);
             //Check to see if it is equal to the inertial force of the turn. If it is equal or greater then we have reached the limit
@@ -266,6 +270,8 @@ public class Solver {
     //This actually performs the curve
     public void solveCurve(Manuever curve){
         v = solveCurveSpeed(curve);
+        logger2.write("logging the curve at speed" + v);
+        logger2.write(curve.toString());
         double x = 0;
         while (x < curve.getDistance()){
             x += v*td;
@@ -282,13 +288,12 @@ public class Solver {
         double rearBrakingForce = inputCar.getBrakingTorqueRear()/(inputCar.getTireRadius()*0.3048); //Braking force is Torque (N*m)/Tire radius (m) 
         double internalV = velIn;
         double a = 0;
-        double wt = 0;
         double dist = 0;
         double internalKE = 0.5*inputCar.getMass()*Math.pow(velIn,2);
         while (internalV > velOut){
             double g = a/9.81;
             double internalDx = internalV*td;
-            double downforce = inputCar.getDownForce(v);
+            double downforce = inputCar.getDownForce(internalV);
             double totalFrontNorm = (inputCar.getMass()*inputCar.getCGfront()+inputCar.getLongWeightTransfer(g))*9.81+downforce/2;
             double totalRearNorm = (inputCar.getMass()*(1-inputCar.getCGfront())-inputCar.getLongWeightTransfer(g))*9.81+downforce/2;
             double frontMaxBrakingForce = inputCar.getLongMaxForcePerTire(totalFrontNorm/2)*2;
@@ -300,12 +305,13 @@ public class Solver {
                 rearBrakingForce = rearMaxBrakingForce;
             }
             double tireF = frontBrakingForce+rearBrakingForce;
-            double externalF = inputCar.getDownForce(v);
-            internalKE = internalKE - tireF*internalDx-externalF*internalDx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
+            double externalF = inputCar.getDragForce(internalV);
+            a = (tireF+externalF)/inputCar.getMass();
+            internalKE = internalKE - tireF*internalDx - externalF*internalDx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             internalV = Math.sqrt((2*internalKE/inputCar.getMass()));
             dist += internalDx;
         }
-
+        logger2.write("Braking distance is " + dist);
         return dist;
     }
 }
