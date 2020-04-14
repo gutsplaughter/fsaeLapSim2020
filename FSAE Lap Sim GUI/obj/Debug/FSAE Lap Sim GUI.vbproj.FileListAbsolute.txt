@@ -1,0 +1,12 @@
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\bin\Debug\FSAE Lap Sim GUI.exe.config
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\bin\Debug\FSAE Lap Sim GUI.exe
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\bin\Debug\FSAE Lap Sim GUI.pdb
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\bin\Debug\FSAE Lap Sim GUI.xml
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.vbprojAssemblyReference.cache
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE_Lap_Sim_GUI.Resources.resources
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.vbproj.GenerateResource.cache
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.vbproj.CoreCompileInputs.cache
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.exe
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.xml
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE Lap Sim GUI.pdb
+C:\Users\Bryce\Desktop\lapSim\javaEdition\FSAE Lap Sim GUI\obj\Debug\FSAE_Lap_Sim_GUI.Form1.resources

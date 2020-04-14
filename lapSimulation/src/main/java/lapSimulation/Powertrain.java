@@ -15,12 +15,13 @@ public class Powertrain{
     private double shift34;
     private double shift45;
     private double revLimit;
-    private double clutchEngagementRPM = 5700;
+    private double clutchEngagementRPM = 6000;
+    private double topSpeed;
 
     public Powertrain(String engineCSV, int rpmColumn, int powerColumn, int torqueColumn, double primaryRatio, double finalDrive, double gear1, double gear2, double gear3, double gear4, double gear5, double tireRadius) throws IOException{
         //assign in all the gear ratios
         this.primaryRatio = primaryRatio;
-        this.finalDrive = primaryRatio;
+        this.finalDrive = finalDrive;
         this.gear[0] = gear1;
         this.gear[1] = gear2;
         this.gear[2] = gear3;
@@ -82,6 +83,10 @@ public class Powertrain{
         shift34 = (revLimit/(this.primaryRatio*this.gear[2]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of third
         shift45 = (revLimit/(this.primaryRatio*this.gear[3]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);  //Calculates the end of fourth
         
+        //Find the top speed of this powertrain
+        topSpeed = (revLimit/(this.primaryRatio*this.gear[4]*this.finalDrive)*60*this.tireRadius*2*3.14159/5280);
+        System.out.println("topspeed: " + topSpeed);
+
         System.out.println("Done");
     }
 
@@ -237,6 +242,9 @@ public class Powertrain{
             return clutchEngagementRPM;
         }
         return rpmInGear;
+    }
+    public double getTopSpeed(){
+        return topSpeed;
     }
 
     //Setters

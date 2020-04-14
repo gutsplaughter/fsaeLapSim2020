@@ -4,11 +4,11 @@ public class Solver {
     private Track inputTrack;
     private Car inputCar;
     private Logger logger;
-    private Logger logger2;
     private double v;                   //velocity (m/s)
     private double ke;                  //kinetic energy (J)
     private double td;                  //step time increment (s)
     private double totalLapTime;        //Initial lap time starts at 0, this is the global timekeeper !!! (s)
+    private double totalDistance;        //Initial lap time starts at 0, this is the global timekeeper !!! (s)
 
     public Solver(Track inputTrack, Car inputCar){
         this.inputTrack = inputTrack;
@@ -16,16 +16,17 @@ public class Solver {
         
 
         logger = new Logger("solverLog");
-        logger2 = new Logger("brakingLog");
         logger.write("time, distance, velocity, gear, torque");
 
         //Set up our basic variables for kinetic enery and velocity
         v = 0; //velocity cant start at zero or things cancel out
         ke = 0; //kinetic energy
         td = 0.001; //step time increment
+        
 
-        //Initial lap time starts at 0, this is the global timekeeper !!!
+        //Initial lap time and distance starts at 0, this is the global timekeeper !!!
         totalLapTime = 0;
+        totalDistance = 0;
         
     }
 
@@ -53,7 +54,6 @@ public class Solver {
                 System.out.println("Processing " + currentManuever + "...");
                 //if we have a straight followed by turn then we need to find the velocity of the next turn first to know our end velocity
                 double endVel = solveCurveSpeed(nextManuever);
-                logger2.write("curvespeed" + endVel);
                 //Set a variable to the total distance of this straight away
                 solveStraight(currentManuever.getDistance(), v, endVel);
             }
@@ -113,17 +113,18 @@ public class Solver {
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
                     dx = v*td;
-                    logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v) + ", " + getBrakingDistance(v, exitSpeed));
+                    logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v) + ", " + getBrakingDistance(v, exitSpeed));
                     f = inputCar.getDragForce(v);
                     a = f/inputCar.getMass();
                     ke = ke - f*(dx); //add the power of the engine (745.7 Watts/1hp) and then subtract drag work
                     x += dx;
+                    totalDistance += dx;
                     totalLapTime += td;
                 }
                 gear++;
             }
             //Log some metrics
-            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             //Calculate the weight transfer based on the last iterations acceleration. If this is first iteration we defined a as zero (we give the long weight transfer function in units of g)
             double g = a/9.81;
             double downforce = inputCar.getDownForce(v);
@@ -142,11 +143,10 @@ public class Solver {
             //If the forces we want to put to the tire are higher than what we can handle then we will just assume we are operating at tire limit here
             ke += f*(dx); 
             x += dx;
+            totalDistance += dx;
             totalLapTime += td;
         }
         double peakStraightSpeed = v;
-        System.out.println("Peak speed = " + peakStraightSpeed);
-        logger2.write("Starting braking with " + (length-x) + " to go ");
         //Now perform the braking
         x = 0;
         a = 0;
@@ -171,16 +171,17 @@ public class Solver {
             a = (tireF+externalF)/inputCar.getMass();
             ke = ke - tireF*dx - externalF*dx;  //Subtract the energy we lost to braking and drag know that we can only brake so hard tho so thats the max tractive force bit 
             v = Math.sqrt((2*ke/inputCar.getMass()));
-            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             x += dx;
+            totalDistance += dx;
             totalLapTime += td;
         }
-        logger2.write("Finished braking in distance " + x + " and speed " + v + " speed should be " + exitSpeed);
     }
 
     /////////////////////////////////////////////////////////////////
     //Method to solve straight with no known required exit speed
     public void solveStraight(double length, double entrySpeed){
+        System.out.println("Solving no known exit speed straight");
         double x = 0;
         double f = 0;
         double a = 0;
@@ -198,15 +199,16 @@ public class Solver {
                 //If we found a shift then coast down for the shift time
                 for (double t = 0; t < inputCar.getShiftTime(); t=t+td){
                     v = Math.sqrt((2*ke/inputCar.getMass()));
-                    logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v));
+                    logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + 0 + ", " + inputCar.getRPM(v));
                     f = inputCar.getDragForce(v); 
                     ke = ke - f*(dx); 
                     x += dx;
+                    totalDistance += dx;
                     totalLapTime += td;
                 }
                 gear++;
             }
-            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + gear + ", " + inputCar.getTorque(v) + ", " + inputCar.getRPM(v));
+            logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + gear + ", " + inputCar.getTorque(v) + ", " + inputCar.getRPM(v));
             //Calculate the weight transfer based on the last iterations acceleration. If this is first iteration we defined a as zero (we give the long weight transfer function in units of g)
             double g = a/9.81;
             double downforce = inputCar.getDownForce(v);
@@ -225,6 +227,7 @@ public class Solver {
             //If the forces we want to put to the tire are higher than what we can handle then we will just assume we are operating at tire limit here
             ke += f*(dx); 
             x += dx;
+            totalDistance += dx;
             totalLapTime += td;
         }            
     }
@@ -233,7 +236,6 @@ public class Solver {
     //Returns the steady state speed to tackle the constant radius turn
     //It assumes all the turns are right hand turns. This doesnt matter anyway. The car is symmetric
     public double solveCurveSpeed(Manuever curve){
-        logger2.write(curve.toString());
         //double curveSpeed = Math.sqrt(curve.getRadius()*9.81*inputCar.getLatFriction());
         //Setup Fz for each wheel
         double frNorm = 0;
@@ -263,6 +265,11 @@ public class Solver {
                 break;
             }
         }
+        //Make sure this curve cant be hit faster than the top speed of the car. If it is, then go 1mph under top speed and warn user
+        if (curveSpeed >= inputCar.getTopSpeed()){
+            System.out.println("ERROR: Turn can be taken at a speed higher than the vehicles top speed");
+            curveSpeed = inputCar.getTopSpeed()-1;
+        }
         return curveSpeed;
     }
 
@@ -270,12 +277,12 @@ public class Solver {
     //This actually performs the curve
     public void solveCurve(Manuever curve){
         v = solveCurveSpeed(curve);
-        logger2.write("logging the curve at speed" + v);
-        logger2.write(curve.toString());
         double x = 0;
         while (x < curve.getDistance()){
-            x += v*td;
-            logger.write(totalLapTime + ", " + x + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
+            double dx = v*td;
+            x += dx;
+            totalDistance += dx;
+            logger.write(totalLapTime + ", " + totalDistance + ", " + v*2.23694 + ", " + inputCar.getGear(v) + ", " + inputCar.getPower(v));
             totalLapTime += td;
         }
     }
@@ -311,7 +318,6 @@ public class Solver {
             internalV = Math.sqrt((2*internalKE/inputCar.getMass()));
             dist += internalDx;
         }
-        logger2.write("Braking distance is " + dist);
         return dist;
     }
 }

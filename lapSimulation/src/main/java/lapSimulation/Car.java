@@ -52,6 +52,7 @@ public class Car {
             if (myScanner.hasNext()){
                 varType = new String(myScanner.next());
             }
+            varType = varType.replaceAll("[^a-zA-Z0-9]", "");
             switch(varType){
                 case "mass" :
                     mass = myScanner.nextDouble();
@@ -72,25 +73,25 @@ public class Car {
                     frontalArea = myScanner.nextDouble();   
                     break;
                 case "primaryRatio" :
-                    primaryRatio = myScanner.nextDouble();   
+                    this.primaryRatio = myScanner.nextDouble();   
                     break;
                 case "finalDrive" :
-                    finalDrive = myScanner.nextDouble();       
+                    this.finalDrive = myScanner.nextDouble();
                     break;
                 case "1stGear" :
-                    gear1 = myScanner.nextDouble();   
+                    this.gear1 = myScanner.nextDouble();   
                     break;
                 case "2ndGear" :
-                    gear2 = myScanner.nextDouble();   
+                    this.gear2 = myScanner.nextDouble();   
                     break;
                 case "3rdGear" :
-                    gear3 = myScanner.nextDouble();   
+                    this.gear3 = myScanner.nextDouble();   
                     break;
                 case "4thGear" :
-                    gear4 = myScanner.nextDouble();   
+                    this.gear4 = myScanner.nextDouble();   
                     break;
                 case "5thGear" :
-                    gear5 = myScanner.nextDouble();   
+                    this.gear5 = myScanner.nextDouble();   
                     break;
                 case "tireRadius" :
                     tireRadius = myScanner.nextDouble();   
@@ -153,7 +154,7 @@ public class Car {
         //////////////////////////////
         String engineCSV = new String("engineData.csv");
         if (Sim.inputMode.equals("default")){
-            this.powertrain = new Powertrain(engineCSV, 2, 4, 3, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
+            this.powertrain = new Powertrain(engineCSV, 2, 4, 3, this.primaryRatio, this.finalDrive, this.gear1, this.gear2, this.gear3, this.gear4, this.gear5, this.tireRadius);
         }
         else{
             System.out.print("\nEnter engine data file name or press enter for \"engineData.csv\" (First row will be ignored): ");
@@ -179,7 +180,8 @@ public class Car {
             System.out.println("\nImporting engine power curve data...");
     
             try{
-                this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, torqueColumn, primaryRatio, finalDrive, gear1, gear2, gear3, gear4, gear5, tireRadius);
+                System.out.println("Passing final drive ratio as: " + this.finalDrive);
+                this.powertrain = new Powertrain(engineCSV, rpmColumn, powerColumn, torqueColumn, this.primaryRatio, this.finalDrive, this.gear1, this.gear2, this.gear3, this.gear4, this.gear5, this.tireRadius);
             }
             catch(Exception e){
                 System.out.println("ERROR: Invalid engine power curve file name.");
@@ -254,6 +256,9 @@ public class Car {
     public double getLongWeightTransfer(double g){
         double wt = getMass()*getCGheight()*g/wheelbase;
         return wt;
+    }
+    public double getTopSpeed(){
+        return powertrain.getTopSpeed();
     }
 
 
